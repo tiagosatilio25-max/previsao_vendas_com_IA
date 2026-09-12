@@ -19,12 +19,17 @@ st.set_page_config(
     layout="wide"
 )
 
+SEMENTE = 42
+
+np.random.seed(SEMENTE)
+tf.random.set_seed(SEMENTE)
+
 
 @st.cache_data
 def carregar_dados_padrao() -> pd.DataFrame:
     """Carrega dataset inicial via dicionário Python."""
     dados_vendas = {
-        "Data": pd.date_range(start="2026-01-01", periods=12, freq="M"),
+        "Data": pd.date_range(start="2026-01-01", periods=12, freq="ME"),
         "Vendas_Unidades": [120, 135, 150, 160, 190, 210, 230, 250, 280, 300, 310, 340],
         "Investimento_Mkt": [10, 12, 15, 14, 18, 20, 22, 25, 27, 30, 31, 35]
     }
@@ -40,16 +45,40 @@ def preparar_dados(vendas: np.ndarray, janela: int):
     return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
 
 
-def treinar_modelo_tensorflow(X: np.ndarray, y: np.ndarray, epocas: int) -> tf.keras.Model:
+@st.cache_resource
+def treinar_modelo_tensorflow(
+    X: np.ndarray,
+    y: np.ndarray,
+    epocas: int
+) -> tf.keras.Model:
     """Compila e treina uma rede neural de regressão."""
+
     modelo = Sequential([
-        Dense(16, activation='relu', input_shape=(X.shape[1],)),
-        Dense(8, activation='relu'),
+        Dense(
+            16,
+            activation="relu",
+            input_shape=(X.shape[1],)
+        ),
+        Dense(
+            8,
+            activation="relu"
+        ),
         Dense(1)
     ])
-    
-    modelo.compile(optimizer='adam', loss='mse', metrics=['mae'])
-    modelo.fit(X, y, epochs=epocas, verbose=0)
+
+    modelo.compile(
+        optimizer="adam",
+        loss="mse",
+        metrics=["mae"]
+    )
+
+    modelo.fit(
+        X,
+        y,
+        epochs=epocas,
+        verbose=0
+    )
+
     return modelo
 
 
@@ -60,7 +89,7 @@ def main():
     # Painel Lateral para Configurações
     st.sidebar.header("⚙️ Configurações do Modelo")
     tamanho_janela = st.sidebar.slider("Janela de Histórico (meses)", min_value=2, max_value=6, value=3)
-    epocas_treino = st.sidebar.slider("Épocas de Treinamento", min_value=100, max_value=1000, value=500, step=100)
+    epocas_treino = st.sidebar.slider("Épocas de Treinamento", min_value=10, max_value=100, value=50, step=10)
 
     # Carregamento de dados
     df = carregar_dados_padrao()
